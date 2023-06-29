@@ -1,0 +1,128 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ForType {
+  GROUP
+  USER
+}
+
+enum RepeatType {
+  EVERYDAY
+  ONE_TIME
+  EVERY_SOME_OF_DAYS
+}
+
+model User {
+  id         Int      @id @default(autoincrement())
+  email      String   @unique @db.VarChar(50)
+  username   String   @db.VarChar(50)
+  password   String   @db.VarChar(250)
+  isMuted    Boolean  @default(false)
+  isVerified Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  taskLists   TaskList[]
+  userGroup   UserGroup[]
+  ownedGroups Group[]     @relation("OwnerUser")
+  adminGroups Group[]     @relation("AdminUser")
+  token       Token?
+  otp         Otp?
+}
+
+model Token {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @unique
+  token     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Otp {
+  id         Int      @id @default(autoincrement())
+  userId     Int      @unique
+  otp        String   @unique @db.VarChar(250)
+  expireDate Int      @default(1800)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Group {
+  id         Int      @id @default(autoincrement())
+  name       String   @unique @db.VarChar(50)
+  adminsIds  Int[]    @default([])
+  ownerId    Int
+  inviteLink String   @unique @db.VarChar(50)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  admins User[] @relation("AdminUser")
+  owner  User?  @relation("OwnerUser", fields: [ownerId], references: [id])
+
+  taskLists  TaskList[]
+  userGroups UserGroup[]
+}
+
+model TaskList {
+  id         Int        @id @default(autoincrement())
+  date       DateTime?
+  frequency  DateTime[] @default([])
+  userId     Int
+  groupId    Int?
+  forType    ForType    @default(USER)
+  repeatType RepeatType @default(ONE_TIME)
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+
+  tasks Task[]
+  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  group Group? @relation(fields: [groupId], references: [id], onDelete: Cascade)
+}
+
+model Task {
+  id          Int      @id @default(autoincrement())
+  taskListId  Int
+  name        String   @db.VarChar(100)
+  description String   @db.VarChar(500)
+  duration    Int      @default(60) // 1 hour
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  taskList TaskList   @relation(fields: [taskListId], references: [id], onDelete: Cascade)
+  progress Progress[]
+}
+
+model Progress {
+  id        Int      @id @default(autoincrement())
+  taskId    Int
+  progress  Int      @default(0)
+  date      DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+}
+
+model UserGroup {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  groupId   Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+}

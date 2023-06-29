@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "Otp" ADD COLUMN     "expireDate" INTEGER NOT NULL DEFAULT 1800;

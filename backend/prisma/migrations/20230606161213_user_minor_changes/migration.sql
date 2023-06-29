@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "User" ALTER COLUMN "isMuted" DROP NOT NULL,
+ALTER COLUMN "otp" DROP NOT NULL;
